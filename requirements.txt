@@ -1,0 +1,10 @@
+sentence-transformers==3.4.1
+langchain
+flask
+pypdf
+python-dotenv
+chromadb
+langchain_community
+langchain_openai
+langchain_experimental
+-e .
