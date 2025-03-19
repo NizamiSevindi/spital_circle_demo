@@ -2,7 +2,6 @@ import os
 import time
 from src.helper import load_pdf_file, text_split
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
 from dotenv import load_dotenv
 from langchain.embeddings import AzureOpenAIEmbeddings
 from langchain_openai import AzureOpenAIEmbeddings
@@ -21,7 +20,6 @@ embeddings = AzureOpenAIEmbeddings(
 
 extracted_data=load_pdf_file(data='Data/')
 text_chunks=text_split(extracted_data)
-
 
 BATCH_SIZE = 200 
 WAIT_TIME = 30 

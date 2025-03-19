@@ -66,7 +66,6 @@ def chat():
     print("Response: ", response["answer"])
     
     formatted_text = raw_text.replace("\n", "<br>")
-
     formatted_text = re.sub(r"(\d+)\.\s", r"<li>", formatted_text)  
     formatted_text = formatted_text.replace("</li><br>", "</li>") 
     formatted_text = re.sub(r"(<li>.*?</li>)", r"<ol>\1</ol>", formatted_text) 
