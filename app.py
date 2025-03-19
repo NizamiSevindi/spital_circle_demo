@@ -9,6 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import AzureChatOpenAI
 import subprocess 
 import re
+from src.prompt import SYSTEM_PROMPT
 
 
 app = Flask(__name__)
@@ -24,7 +25,6 @@ embeddings = AzureOpenAIEmbeddings(
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
     )
 
-
 if os.path.isdir(CHROMA_DB_PATH):
     docsearch = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=embeddings)
     print("Chroma database found.")
@@ -32,8 +32,6 @@ else:
     subprocess.run(["python", "store_index.py"])
     docsearch = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=embeddings)
     print("Chroma database not found. Creating a new one.")
-
-
 
 retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k": 3})
 
@@ -45,7 +43,7 @@ llm = AzureChatOpenAI(
 )
 
 prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful AI assistant."),
+    ("system", SYSTEM_PROMPT),
     ("human", "{input} \n\nContext:\n{context}"),
 ])
 
