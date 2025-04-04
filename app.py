@@ -1,16 +1,13 @@
 import os
+import subprocess 
 from dotenv import load_dotenv
+from src.prompt import SYSTEM_PROMPT
 from flask import Flask, render_template, request
 from langchain_chroma import Chroma
 from langchain_openai import AzureOpenAIEmbeddings
-from langchain.chains import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import AzureChatOpenAI
-import subprocess 
-import re
-from src.prompt import SYSTEM_PROMPT
-
+from flask import send_from_directory
 
 app = Flask(__name__)
 
@@ -44,11 +41,38 @@ llm = AzureChatOpenAI(
 
 prompt = ChatPromptTemplate.from_messages([
     ("system", SYSTEM_PROMPT),
-    ("human", "{input} \n\nContext:\n{context}"),
+    ("human", "{input}\n\nContext:\n{context}"),
 ])
 
-question_answer_chain = create_stuff_documents_chain(llm, prompt)
-rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+def rag_chain_with_links(question):
+    docs = retriever.get_relevant_documents(question)
+    context = "\n\n".join([doc.page_content for doc in docs])
+    """ 
+    context = json.dumps(
+        [{"page_content": doc.page_content} for doc in docs],
+        ensure_ascii=False,
+        indent=2
+    ) 
+    """
+
+    response = llm.invoke(prompt.format(input=question, context=context))
+    
+    sources = "".join([
+        f"""
+            <details style='margin-bottom: 10px;'>
+                <summary>
+                    Source {i+1} – {doc.metadata.get("source", "Unbekannt")} / Seite {doc.metadata.get("page", 1)}
+                </summary>
+                <a href="Data/{doc.metadata.get("source", "#")}#page={doc.metadata.get("page", 1)}" target="_blank">
+                    🔗 Zum PDF (Seite {doc.metadata.get("page", 1)})
+                </a><br><br>
+                <pre style="white-space: pre-wrap;">{doc.page_content}</pre>
+            </details>
+        """
+        for i, doc in enumerate(docs)
+    ])
+
+    return {"answer": f"{response.content}<br><br>{sources}"}
 
 @app.route("/")
 def index():
@@ -59,18 +83,13 @@ def chat():
     msg = request.form["msg"]
     print("User: ", msg)
     
-    response = rag_chain.invoke({"input": msg})
+    response = rag_chain_with_links(msg)
     raw_text = response["answer"]
-    print("Response: ", response["answer"])
-    
-    formatted_text = raw_text.replace("\n", "<br>")
-    formatted_text = re.sub(r"(\d+)\.\s", r"<li>", formatted_text)  
-    formatted_text = formatted_text.replace("</li><br>", "</li>") 
-    formatted_text = re.sub(r"(<li>.*?</li>)", r"<ol>\1</ol>", formatted_text) 
+    return raw_text
 
-    formatted_text = re.sub(r"\[(.*?)\]\((.*?)\)", r'<a href="\2" target="_blank">\1</a>', formatted_text)
-
-    return formatted_text
+@app.route('/Data/<path:filename>')
+def serve_data(filename):
+    return send_from_directory('Data', filename)
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8080, debug=True)

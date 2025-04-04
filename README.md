@@ -21,7 +21,7 @@ pip install -r requirements.txt
 ```
 
 
-### Create a `.env` file in the root directory and add your Pinecone & openai credentials as follows:
+### Create a `.env` file in the root directory and add your openai credentials as follows:
 
 ```ini
 AZURE_OPENAI_DEPLOYMENT_NAME="text-embedding-ada-002"
