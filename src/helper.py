@@ -14,7 +14,6 @@ def load_and_split_pdf(data):
                 page_num = int(page.metadata.get('page_label', page.metadata.get('page', 0) + 1))
                 page.metadata['source'] = pdf_file
                 page.metadata['page'] = page_num
-                print(page.metadata)
             documents.extend(pages)
     splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=300)
     split_docs = splitter.split_documents(documents)
